@@ -2,8 +2,7 @@
   const $ = (s) => document.querySelector(s);
   const form = $("#form");
   const f = form.elements;
-  const KEY = "fitplan.v2";
-  const GROUPS = Generator.GROUP_ORDER;
+ const GROUPS = Generator.GROUP_ORDER;
   const LABEL = Generator.GROUP_LABEL;
   let seed = 0;
   let splits = Generator.defaultSplits(2); // [[group,...], ...]
@@ -146,8 +145,8 @@
     updateGoalUI();
   }
 
-  function save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
-  function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
+  const save = (d) => Store.setForm(d);   // 입력값도 계정 데이터 안에 같이 저장된다
+  const load = () => Store.form();
 
   // ---------- 렌더링 ----------
   const stat = (label, value, unit, sub) =>
@@ -370,12 +369,16 @@
   const printBtn = $("#print");
   if (printBtn) printBtn.addEventListener("click", () => window.print());
 
-  // ---------- 시작 ----------
+  // ---------- 시작: 비밀번호로 로그인한 뒤(fit:unlocked) 그 계정의 데이터로 화면을 채운다 ----------
   syncSplitCountOptions();
-  const saved = load();
-  if (saved && !["muscle", "lose", "strength"].includes(saved.goal)) saved.goal = "muscle";
-  if (saved) { write(saved); if (Store.program()) showProgram(); else run(false); }
-  else { setSplitCount(Generator.recommendedSplitCount(Number(f.days.value))); updateGoalUI(); setEquip(Exercises.LOCATION_EQ[f.location.value]); ensureDate(); updateGoalHint(); }
+  function start() {
+    const saved = load();
+    if (saved && !["muscle", "lose", "strength"].includes(saved.goal)) saved.goal = "muscle";
+    if (saved) { write(saved); if (Store.program()) showProgram(); else run(false); }
+    else { setSplitCount(Generator.recommendedSplitCount(Number(f.days.value))); updateGoalUI(); setEquip(Exercises.LOCATION_EQ[f.location.value]); ensureDate(); updateGoalHint(); }
+    showTab("plan");
+  }
+  document.addEventListener("fit:unlocked", start);
 
   // 오프라인 사용: 서비스 워커 (iframe·file:// 에서는 건너뜀)
   if ("serviceWorker" in navigator && location.protocol.startsWith("http") && window.top === window.self) {

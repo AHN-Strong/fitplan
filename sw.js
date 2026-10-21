@@ -1,10 +1,10 @@
 /* 오프라인 사용을 위한 서비스 워커.
  * 앱 파일은 미리 저장하고, 사진·해부도는 처음 볼 때 저장한다. 업데이트하면 VERSION을 올린다. */
-const VERSION = "fitplan-v6";
+const VERSION = "fitplan-v7";
 const CORE = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
   "js/calc.js", "js/exercises.js", "js/generator.js", "js/progress.js", "js/store.js",
-  "js/bodymap.js", "js/eximages.js", "js/app.js", "js/workout.js", "js/stats.js", "js/energy.js", "js/foods.js", "js/diet.js", "js/activity.js",
+  "js/bodymap.js", "js/eximages.js", "js/app.js", "js/workout.js", "js/stats.js", "js/energy.js", "js/foods.js", "js/diet.js", "js/activity.js", "js/bodycomp.js", "js/vault.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
   "assets/wger/muscular_system_front.svg", "assets/wger/muscular_system_back.svg",
 ];

@@ -144,7 +144,35 @@
     const recent = d.weights.slice(-5).reverse();
     $("#bodyChips").innerHTML = recent.length ? `<div class="chips">${recent.map((w) => `<span class="chip">${fmtDate(w.date)} ${w.kg}kg${w.bf != null ? ` · ${w.bf}%` : ""}${w.smm != null ? ` · 근육 ${w.smm}kg` : ""} <button type="button" class="x" data-wdel="${w.date}" aria-label="${fmtDate(w.date)} 기록 삭제">✕</button></span>`).join("")}</div>` : "";
   }
-  const weightSection = bodySection;
+  // 체성분 분석표(막대 그래프)와 상태 평가
+  const LV = { low: "낮음", normal: "표준", high: "높음" };
+  function analysisSection() {
+    const d = Store.data(), p = d.program, box = $("#bodyAnalysis"), st = $("#bodyStatus");
+    if (!p || !d.weights.length) { box.innerHTML = ""; st.innerHTML = ""; return; }
+    const input = Energy.currentInput(p, d.weights, Store.settings(), Store.today());
+    const rec = d.weights[d.weights.length - 1];
+    const a = BodyComp.analysis(rec, input);
+    const [s0, s1] = BodyComp.SCALE, span = s1 - s0;
+    const pos = (v) => Math.max(0, Math.min(100, ((v - s0) / span) * 100));
+    const rows = a.rows.map((r) => {
+      if (r.value == null) return `<div class="arow"><span class="al">${r.label}</span><div class="abar dim"></div><span class="av">측정값 없음</span></div>`;
+      const [lo, hi] = r.range;
+      return `<div class="arow"><span class="al">${r.label}</span>
+        <div class="abar" role="img" aria-label="${r.label} 표준 대비 ${r.pct}%"><i class="zone" style="left:${pos(lo)}%;width:${pos(hi) - pos(lo)}%"></i><i class="fill ${r.level}" style="width:${pos(r.pct)}%"></i><u style="left:${pos(100)}%"></u></div>
+        <span class="av"><b>${r.value}kg</b> <small>${r.pct}% · ${LV[r.level]}</small></span></div>`;
+    }).join("");
+    const scale = `<div class="ascale"><span style="left:${pos(70)}%">70</span><span style="left:${pos(100)}%">100</span><span style="left:${pos(130)}%">130</span><span style="left:${pos(160)}%">160</span><span style="left:${pos(190)}%">190</span></div>`;
+    box.innerHTML = `<h3 class="sub3">체성분 분석 <small>${fmtDate(rec.date)} 기록 · 표준 대비 %</small></h3>
+      <div class="abars">${scale}${rows}</div>
+      ${a.type ? `<p class="atype"><b>${a.type.name}</b> ${a.type.tip}</p>` : `<p class="note">골격근량과 체지방률을 함께 기록하면 체형 분석이 나와요.</p>`}
+      <p class="note">초록 띠는 표준 범위입니다. 표준값은 키와 성별로 구한 표준체중에 일반적인 비율을 곱한 근사값이라, 인바디 같은 기기 결과와 다를 수 있어요.</p>`;
+
+    const s = BodyComp.status(d.weights, input, Store.today());
+    const icon = { perfect: "완벽", ok: "적정", warn: "경고", none: "대기" }[s.level];
+    st.innerHTML = `<div class="bstatus ${s.level}"><div class="bbadge">${icon}</div><div class="bwhy"><b>${s.level === "none" ? "아직 평가할 기록이 부족해요" : "최근 체성분 변화 평가"}</b>
+      <ul>${s.reasons.map((r) => `<li class="${r.lv || "none"}">${r.t || r}</li>`).join("")}</ul></div></div>`;
+  }
+  const weightSection = () => { bodySection(); analysisSection(); };
   $("#bodyMetric").addEventListener("change", (e) => { if (e.target.name === "bodyMetric") { metric = e.target.value; bodySection(); } });
 
   function e1Section() {
@@ -193,7 +221,7 @@
     const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
     Store.addBody(date, { kg: r1(kg), bf: r1(bf), smm: r1(smm) });
     ["wKg", "wBf", "wSmm"].forEach((id) => ($("#" + id).value = ""));
-    bodySection(); summary(); App.toast("체성분을 기록했어요");
+    weightSection(); summary(); App.toast("체성분을 기록했어요");
   });
   $("#tab-log").addEventListener("click", (e) => {
     const wd = e.target.closest("[data-wdel]");
@@ -223,7 +251,7 @@
     try {
       Store.importJSON(text);
       const p = Store.program();
-      if (p) { try { localStorage.setItem("fitplan.v2", JSON.stringify(p.input)); } catch (e) {} }
+      if (p) Store.setForm(p.input);
       App.toast("복원했어요. 화면을 새로고침합니다");
       setTimeout(() => location.reload(), 900);
     } catch (e) { App.toast("복원 실패: " + e.message); }
@@ -233,6 +261,20 @@
     const r = new FileReader();
     r.onload = () => { $("#backupText").value = String(r.result); App.toast("파일을 불러왔어요. '복원하기'를 한 번 더 누르세요"); };
     r.readAsText(f);
+  });
+
+  // 계정 · 보안
+  $("#pwForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const o = $("#pwOld").value, n = $("#pwNew").value;
+    if (n.length < 4) { App.toast("새 비밀번호는 4자 이상으로 정해 주세요"); return; }
+    try { await Vault.changePassword(o, n); $("#pwOld").value = ""; $("#pwNew").value = ""; App.toast("비밀번호를 바꿨어요"); }
+    catch (er) { App.toast(er.message); }
+  });
+  $("#delAccount").addEventListener("click", (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "정말 삭제할까요? 한 번 더 누르면 모든 기록이 지워져요"; setTimeout(() => { b.dataset.armed = ""; b.textContent = "이 기기에서 내 계정과 기록 삭제"; }, 4000); return; }
+    Vault.deleteCurrent();
   });
 
   document.addEventListener("fit:tab", (e) => { if (e.detail === "log") renderAll(); });

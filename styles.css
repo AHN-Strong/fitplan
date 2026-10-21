@@ -383,3 +383,75 @@ details.fold2 select{margin:4px 0 8px}
 #formCard h1{font-size:18px}
 
 .formsum button{flex:none;white-space:nowrap}
+
+/* ---------- 비밀번호 첫 화면 ---------- */
+.gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));overflow-y:auto}
+.gate[hidden]{display:none}
+body.locked>:not(#gate):not(script):not(style){display:none!important}
+.gatecard{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 20px;display:grid;gap:10px}
+.gatecard h1{font-size:20px;margin:0}
+.glogo{font-weight:800;font-size:15px;color:var(--pri);letter-spacing:.02em}
+.gatecard label{margin:0}
+.gatecard input[type=text],.gatecard input[type=password]{display:block;width:100%;margin-top:4px;padding:12px;font-size:16px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:48px}
+.gname{font-size:18px;font-weight:700;margin:4px 0}.gname small{font-weight:400;color:var(--muted);font-size:14px}
+.gerr{min-height:18px;margin:0;font-size:14px}
+.gwarn{margin:4px 0 0;font-size:12px}
+.note.ok{color:#059669}
+.who{margin-left:auto;display:inline-flex;align-items:center;gap:8px}
+.who b{font-size:13px;font-weight:600}
+.who .small{min-height:32px;padding:0 10px;font-size:12px}
+.pwform{display:grid;gap:8px;margin-bottom:10px}
+.pwform input{display:block;width:100%;margin-top:4px;padding:11px 12px;font-size:16px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:44px}
+.ghost.danger{color:#dc2626}
+
+/* ---------- 체성분 분석 · 상태 평가 ---------- */
+.sub3{font-size:15px;margin:14px 0 8px}.sub3 small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+.abars{background:var(--soft);border-radius:12px;padding:12px 12px 8px}
+.ascale{position:relative;height:14px;margin:0 0 4px 78px;margin-right:96px}
+.ascale span{position:absolute;transform:translateX(-50%);font-size:10px;color:var(--muted)}
+.arow{display:grid;grid-template-columns:70px 1fr 96px;gap:8px;align-items:center;margin-bottom:8px;font-size:13px}
+.al{font-weight:600}
+.abar{position:relative;height:14px;border-radius:7px;background:var(--line);overflow:hidden}
+.abar .zone{position:absolute;top:0;bottom:0;background:rgba(16,185,129,.22)}
+.abar .fill{position:absolute;left:0;top:3px;height:8px;border-radius:4px;background:var(--pri)}
+.abar .fill.low{background:#3b82f6}.abar .fill.high{background:#ef4444}.abar .fill.normal{background:#10b981}
+.abar u{position:absolute;top:0;bottom:0;width:2px;background:var(--muted);opacity:.7}
+.abar.dim{opacity:.4}
+.av{text-align:right;line-height:1.2}.av small{display:block;color:var(--muted);font-size:11px}
+.atype{margin:10px 0 4px;font-size:14px}.atype b{color:var(--pri);margin-right:6px}
+.bstatus{display:flex;gap:12px;align-items:flex-start;border-radius:14px;padding:12px;margin:10px 0;background:var(--soft)}
+.bbadge{flex:none;min-width:58px;text-align:center;border-radius:999px;padding:6px 10px;font-weight:800;font-size:14px;color:#fff;background:var(--muted)}
+.bstatus.perfect .bbadge{background:#10b981}.bstatus.ok .bbadge{background:#f59e0b}.bstatus.warn .bbadge{background:#ef4444}
+.bstatus.perfect{background:rgba(16,185,129,.1)}.bstatus.ok{background:rgba(245,158,11,.1)}.bstatus.warn{background:rgba(239,68,68,.1)}
+.bwhy{min-width:0}.bwhy b{font-size:14px}
+.bwhy ul{margin:6px 0 0;padding-left:16px;font-size:13px;display:grid;gap:4px}
+.bwhy li.warn{color:#dc2626}.bwhy li.ok{color:#b45309}.bwhy li.perfect{color:#059669}
+:root[data-theme="dark"] .bwhy li.warn{color:#f87171}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bwhy li.warn{color:#f87171}:root:not([data-theme="light"]) .bwhy li.ok{color:#fbbf24}:root:not([data-theme="light"]) .bwhy li.perfect{color:#34d399}}
+.bstatus.mini{margin:6px 0 10px}
+
+/* ---------- 다이어트 가속 플랜 ---------- */
+.plans{display:grid;gap:10px}
+.plan{background:var(--card);border:2px solid transparent;border-radius:14px;padding:12px}
+.plan.on{border-color:var(--pri)}
+.phead{display:flex;align-items:center;gap:8px;margin-bottom:8px}.phead b{font-size:15px}
+.ptag{margin-left:auto;font-size:11px;font-weight:700;color:var(--pri);background:var(--pri2);border-radius:999px;padding:3px 10px}
+.pnums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pnums div{display:flex;flex-direction:column;background:var(--soft);border-radius:10px;padding:8px}
+.pnums span{font-size:11px;color:var(--muted)}.pnums b{font-size:18px;font-variant-numeric:tabular-nums}.pnums b small{font-size:11px;font-weight:500;color:var(--muted);margin-left:2px}
+.pnums div>small{font-size:11px;color:var(--muted)}
+.plan details{margin:8px 0 0}.plan summary{cursor:pointer;font-size:13px;color:var(--pri);min-height:36px;display:flex;align-items:center}
+.plan .wideb{width:100%;margin-top:8px}
+@media(max-width:380px){.pnums b{font-size:16px}.arow{grid-template-columns:62px 1fr 84px}}
+
+/* ---------- 식단: 같음 · 저장 ---------- */
+.same{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:4px 0 6px;min-height:40px}
+.same.dis{opacity:.45}
+.same input{width:20px;height:20px;accent-color:var(--pri);flex:none}
+.meal.empty .same{margin:2px 0 0}
+.savebox{display:flex;gap:6px;margin-top:8px;align-items:center}
+.savebox input{flex:1;min-width:0;padding:8px 10px;font-size:16px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:44px}
+.schip{display:inline-flex;align-items:center;background:var(--pri2);border-radius:999px;overflow:hidden}
+.schip>button:first-child{background:transparent;color:var(--text);padding:0 4px 0 14px;min-height:40px;font-size:14px}
+.schip small{color:var(--muted)}
+.schip .x{background:transparent;color:var(--muted);min-height:40px;min-width:36px;padding:0}

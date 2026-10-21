@@ -21,6 +21,7 @@
   const mealDefs = () => Array.from({ length: mealCount() }, (_, i) => ["s" + (i + 1), mealName(i)]);
   const MEAL_LABEL_OF = (k) => mealName(Number(k.slice(1)) - 1);
   let editNames = false;
+  let saveKey = null; // 식단으로 저장 중인 끼니
   let cfgOpen = false; // 끼니 설정 펼침 상태 (다시 그려도 유지)
   document.addEventListener("toggle", (e) => { if (e.target.classList && e.target.classList.contains("mealcfgbox")) cfgOpen = e.target.open; }, true);
 
@@ -126,7 +127,10 @@
   function areaHTML() {
     const results = query ? Foods.search(query, Store.customFoods()) : [];
     const recent = query ? [] : recentFoods();
-    return (sel ? selectedHTML() : results.length ? `<div class="fresults">${results.map(foodBtn).join("")}</div>`
+    const saved = !query && !sel ? Store.savedMeals() : [];
+    const yday = !query && !sel && !Store.mealsOn(date).length && Store.mealsOn(shift(date, -1)).length;
+    const savedHTML = saved.length ? `<p class="sub2">저장한 식단 <small>(누르면 ${esc(MEAL_LABEL_OF(meal))}에 넣어요)</small></p><div class="fchips">${saved.map((s) => `<span class="schip"><button type="button" data-loadmeal="${s.id}">${esc(s.name)} <small>${s.items.reduce((a, x) => a + x.kcal, 0).toLocaleString()}kcal</small></button><button type="button" class="x" data-delmeal="${s.id}" aria-label="${esc(s.name)} 삭제">✕</button></span>`).join("")}</div>` : "";
+    return savedHTML + (yday ? `<button type="button" class="linkbtn" data-act="yday">어제 식단 그대로 불러오기</button>` : "") + (sel ? selectedHTML() : results.length ? `<div class="fresults">${results.map(foodBtn).join("")}</div>`
       : query ? `<p class="note">'${esc(query)}' 검색 결과가 없습니다. 아래에서 직접 추가할 수 있어요.</p>`
       : recent.length ? `<p class="sub2">최근 먹은 음식</p><div class="fchips">${recent.map((x) => `<button type="button" class="fchip" data-food="${x.food.id}" data-g="${x.g}">${esc(x.food.name)} <small>${x.g}g</small></button>`).join("")}</div>` : "") +
       (!sel ? `<button type="button" class="linkbtn" data-act="custom">${showCustom ? "직접 추가 닫기" : "+ 목록에 없는 음식 직접 추가"}</button>` : "") +
@@ -177,17 +181,39 @@
       ${editNames ? `<div class="names">${Array.from({ length: mealCount() }, (_, i) => `<label>${i + 1}번째 끼니<input type="text" class="mname" data-i="${i}" value="${esc(mealName(i))}" maxlength="10"></label>`).join("")}</div>` : ""}`;
   }
 
+  // "같음" 체크: 위 끼니(첫 끼니는 어제 같은 끼니)와 같은 식단을 복사한다. 복사한 항목에는 same 표시를 달아 체크 해제 때 지운다
+  function sameSource(k) {
+    const idx = Number(k.slice(1)) - 1;
+    if (idx > 0) return { items: Store.mealsOn(date).filter((x) => x.meal === "s" + idx), label: `위 끼니(${mealName(idx - 1)})와 같음` };
+    return { items: Store.mealsOn(shift(date, -1)).filter((x) => x.meal === k), label: `어제 ${mealName(0)}과 같음` };
+  }
+  function sameHTML(k, items) {
+    const src = sameSource(k);
+    const on = items.some((x) => x.same);
+    return `<label class="same ${src.items.length || on ? "" : "dis"}"><input type="checkbox" data-same="${k}" ${on ? "checked" : ""} ${src.items.length || on ? "" : "disabled"}> ${esc(src.label)}</label>`;
+  }
+
   function mealHTML(k, n, items, tg) {
     const per = tg ? Math.round(tg.kcal / mealCount()) : null;
     const hint = per ? `<small class="rec">권장 약 ${per.toLocaleString()} kcal</small>` : "";
-    if (!items.length) return `<section class="meal empty"><div class="mhead"><h3>${esc(n)}</h3>${hint}</div><p class="note">기록 없음</p></section>`;
+    const same = sameHTML(k, items);
+    if (!items.length) return `<section class="meal empty"><div class="mhead"><h3>${esc(n)}</h3>${hint}</div>${same}</section>`;
     const t = totals(items);
+    const saveRow = saveKey === k
+      ? `<div class="savebox"><input type="text" id="saveName" maxlength="16" value="${esc(n)} 식단" aria-label="저장할 식단 이름"><button type="button" class="ghost small" data-act="savego">저장</button><button type="button" class="ghost small" data-act="savecancel">취소</button></div>`
+      : `<button type="button" class="linkbtn" data-act="savemeal" data-k="${k}">이 끼니를 식단으로 저장</button>`;
     return `<section class="meal"><div class="mhead"><h3>${esc(n)}</h3>${hint}<b>${t.kcal.toLocaleString()} kcal</b></div>
+      ${same}
       <ul>${items.map((x) => `<li data-id="${x.id}">
         <div class="mi"><b>${esc(x.name)}</b><small>탄 ${x.c} · 단 ${x.p} · 지 ${x.f}g</small></div>
         <input type="number" class="gedit" inputmode="decimal" value="${x.g}" aria-label="${esc(x.name)} 그램"><span class="gu">g</span>
         <b class="mk">${x.kcal.toLocaleString()}<small>kcal</small></b>
-        <button type="button" class="x" data-act="del" aria-label="${esc(x.name)} 삭제">✕</button></li>`).join("")}</ul></section>`;
+        <button type="button" class="x" data-act="del" aria-label="${esc(x.name)} 삭제">✕</button></li>`).join("")}</ul>${saveRow}</section>`;
+  }
+
+  // 저장한 한 끼 식단을 선택한 끼니에 넣는다
+  function addItems(k, items, same) {
+    items.forEach((x) => Store.addMeal(date, { meal: k, fid: x.fid, name: x.name, g: x.g, kcal: x.kcal, c: x.c, p: x.p, f: x.f, ...(same ? { same: true } : {}) }));
   }
 
   // ---------- 이벤트 ----------
@@ -208,6 +234,14 @@
       if (Number(String(meal).slice(1)) > n) meal = "s" + n;
       render(); return;
     }
+    const lm = e.target.closest("[data-loadmeal]");
+    if (lm) {
+      const s = Store.savedMeals().find((x) => x.id === lm.dataset.loadmeal);
+      if (s) { addItems(meal, s.items, false); App.toast(`'${s.name}'을(를) ${MEAL_LABEL_OF(meal)}에 넣었어요`); render(); }
+      return;
+    }
+    const dm = e.target.closest("[data-delmeal]");
+    if (dm) { Store.deleteSavedMeal(dm.dataset.delmeal); renderArea(); return; }
     const qb = e.target.closest(".quick [data-g]");
     if (qb) { grams = qb.dataset.g; renderArea(); return; }
     const b = e.target.closest("[data-act]");
@@ -218,6 +252,20 @@
     else if (act === "unsel") { sel = null; grams = ""; renderArea(); const q = $("#foodQ"); if (q) q.focus(); }
     else if (act === "custom") { showCustom = !showCustom; renderArea(); }
     else if (act === "names") { editNames = !editNames; render(); }
+    else if (act === "savemeal") { saveKey = b.dataset.k; render(); const si = $("#saveName"); if (si) { si.focus(); si.select(); } }
+    else if (act === "savecancel") { saveKey = null; render(); }
+    else if (act === "savego") {
+      const items = Store.mealsOn(date).filter((x) => x.meal === saveKey);
+      const name = ($("#saveName").value || "").trim() || `${MEAL_LABEL_OF(saveKey)} 식단`;
+      if (!items.length) { saveKey = null; render(); return; }
+      Store.addSavedMeal(name, items);
+      saveKey = null; App.toast(`'${name}' 식단을 저장했어요. 음식 추가 칸에서 불러올 수 있어요`); render();
+    }
+    else if (act === "yday") {
+      const src = Store.mealsOn(shift(date, -1));
+      src.forEach((x) => Store.addMeal(date, { meal: x.meal, fid: x.fid, name: x.name, g: x.g, kcal: x.kcal, c: x.c, p: x.p, f: x.f }));
+      App.toast("어제 식단을 불러왔어요"); render();
+    }
     else if (act === "add") {
       const g = Number(grams);
       if (!sel || !(g > 0)) return;
@@ -250,6 +298,19 @@
       const names = Array.from({ length: 5 }, (_, i) => mealName(i));
       names[Number(e.target.dataset.i)] = e.target.value.trim() || names[Number(e.target.dataset.i)];
       Store.setSettings({ mealNames: names });
+      render(); return;
+    }
+    if (e.target.dataset && e.target.dataset.same) {
+      const k = e.target.dataset.same;
+      const cur = Store.mealsOn(date).filter((x) => x.meal === k);
+      if (e.target.checked) {
+        cur.filter((x) => x.same).forEach((x) => Store.deleteMeal(date, x.id));
+        const src = sameSource(k).items;
+        if (!src.length) { App.toast("복사할 식단이 없어요"); render(); return; }
+        addItems(k, src, true);
+      } else {
+        cur.filter((x) => x.same).forEach((x) => Store.deleteMeal(date, x.id));
+      }
       render(); return;
     }
     if (e.target.name === "mealPick") { meal = e.target.value; if (sel) renderArea(); }

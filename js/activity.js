@@ -137,11 +137,37 @@
       ${r.target.warning ? `<p class="warn">${r.target.warning}</p>` : ""}
       <ul class="gnotes">${gp.notes.filter((n) => n.level !== "info" || true).map((n) => `<li class="${n.level}">${n.text}</li>`).join("")}</ul>
       ${eta ? `<p class="note">${eta}</p>` : ""}
+      ${plansHTML(input)}
       <label class="slider">매일 활동으로 더 태울 칼로리: <b id="exVal">${extra}</b> kcal
         <input type="range" id="extraRange" min="0" max="800" step="50" value="${extra}">
       </label>
       <p class="note">슬라이더를 올리면 같은 기한을 지키면서 먹을 수 있는 양이 늘어요. 예를 들어 하루 30분 빠르게 걷기는 약 ${Energy.activityKcal(4.3, now, 30)} kcal입니다. 이 값은 식단 탭의 목표 칼로리에도 반영됩니다.</p>
     </div>`;
+  }
+
+  // ---------- 다이어트 가속 플랜 3가지 + 내 감량 상태 ----------
+  function plansHTML(input) {
+    const pl = BodyComp.plans(input, input.weight, Store.today());
+    if (!pl.ok) return `<p class="note">${esc(pl.reason)}</p>`;
+    const s = BodyComp.status(Store.data().weights, input, Store.today());
+    const stat = s.level === "none" ? "" : `<div class="bstatus mini ${s.level}"><div class="bbadge">${BodyComp.LEVEL_LABEL[s.level]}</div><div class="bwhy"><b>내 감량 속도 · 체성분 평가</b><ul>${s.reasons.slice(0, 2).map((r) => `<li class="${r.lv}">${r.t}</li>`).join("")}</ul></div></div>`;
+    return `<h3 class="sub3">다이어트 가속 플랜 <small>${input.weight}kg → ${input.targetWeight}kg (${pl.diff}kg)</small></h3>
+      ${stat}
+      <div class="plans">${pl.list.map((x) => {
+        const on = input.targetDate && x.dateISO === input.targetDate;
+        return `<div class="plan ${on ? "on" : ""}">
+          <div class="phead"><b>${x.name}</b><span class="ptag">${x.tag}</span></div>
+          <div class="pnums">
+            <div><span>주당</span><b>${x.weekly}<small>kg</small></b><small>체중의 ${x.pct}%</small></div>
+            <div><span>하루 섭취</span><b>${x.intake.toLocaleString()}<small>kcal</small></b><small>소모 −${x.deficit}</small></div>
+            <div><span>도달</span><b>${x.days}<small>일</small></b><small>${x.dateISO}</small></div>
+          </div>
+          ${x.limited ? `<p class="warn">이 속도를 지키면서 기초대사량 아래로 먹지 않으려면 하루 ${x.extra}kcal(빠르게 걷기 약 ${x.walkMin}분)를 활동으로 더 태워야 해요.</p>` : ""}
+          <details><summary>근거 보기</summary><p class="note">${esc(x.basis)}</p></details>
+          <button type="button" class="${on ? "primary" : "ghost"} small wideb" data-plan="${x.id}">${on ? "적용 중인 플랜" : "이 플랜으로 기한 정하기"}</button>
+        </div>`;
+      }).join("")}</div>
+      <p class="note">플랜의 속도는 체중 변화 속도를 기준으로 한 일반적인 연구 근거이고, 개인차가 큽니다. 어지럽거나 컨디션이 크게 떨어지면 속도를 늦추세요.</p>`;
   }
 
   // 시작 체중(프로그램 입력)에서 목표까지 진행률 (0~100)
@@ -168,6 +194,25 @@
   card.addEventListener("click", (e) => {
     const go = e.target.closest("[data-go]");
     if (go) { App.showTab(go.dataset.go); return; }
+    const pb = e.target.closest("[data-plan]");
+    if (pb) {
+      const pr = Store.program();
+      const input = Energy.currentInput(pr, Store.data().weights, Store.settings(), Store.today());
+      const pl = BodyComp.plans(input, input.weight, Store.today());
+      const x = pl.ok && pl.list.find((q) => q.id === pb.dataset.plan);
+      if (!x) return;
+      // 기한은 최소 2주 뒤로
+      let date = x.dateISO;
+      if (Calc.weeksUntil(date, Store.today()) < 2) date = shift(Store.today(), 14);
+      Store.updateInput({ targetDate: date, weeks: Calc.weeksUntil(date, Store.today()) });
+      if (x.extra > (Store.settings().extraKcal || 0)) Store.setSettings({ extraKcal: Math.min(800, Math.ceil(x.extra / 50) * 50) }); // 필요한 추가 활동을 목표에 반영
+      const saved = Store.form();
+      if (saved) { saved.targetDate = date; Store.setForm(saved); }
+      const df = document.querySelector('input[name="targetDate"]'); if (df) df.value = date;
+      App.toast(`'${x.name}'으로 정했어요. 목표 기한은 ${date}입니다`);
+      render(); document.dispatchEvent(new CustomEvent("fit:settings"));
+      return;
+    }
     const mb = e.target.closest("[data-min]");
     if (mb) { minutes = mb.dataset.min; render(); return; }
     const del = e.target.closest("[data-del]");
@@ -216,10 +261,8 @@
   function syncJobToForm(job) {
     const sel = document.querySelector('select[name="job"]');
     if (sel) sel.value = String(job);
-    try {
-      const raw = JSON.parse(localStorage.getItem("fitplan.v2") || "null");
-      if (raw) { raw.job = job; localStorage.setItem("fitplan.v2", JSON.stringify(raw)); }
-    } catch (er) {}
+    const saved = Store.form();
+    if (saved) { saved.job = job; Store.setForm(saved); }
   }
 
   document.addEventListener("fit:tab", (e) => { if (e.detail === "energy") render(); });

@@ -16,8 +16,9 @@
 <meta name="description" content="키·몸무게로 기초대사량과 적정 체중을 계산하고, 나에게 맞는 주간 운동 프로그램을 만들어 드립니다.">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="top"><div class="wrap"><strong>🏋️ 핏플랜</strong><span class="sub">기초대사량 · 적정체중 · 맞춤 운동</span></div></header>
+<body class="locked">
+<div id="gate" class="gate" hidden></div>
+<header class="top"><div class="wrap"><strong>핏플랜</strong><span class="sub">기초대사량 · 적정체중 · 맞춤 운동</span><span class="who"><b id="whoName"></b><button type="button" id="lockBtn" class="ghost small" title="잠그고 처음 화면으로">잠금</button></span></div></header>
 
 <nav class="tabs" id="tabs" aria-label="메뉴">
   <button type="button" data-tab="plan" class="on">📋 계획</button>
@@ -256,7 +257,9 @@
         <button type="submit" class="primary small">기록</button>
       </form>
       <p class="note">인바디 같은 체성분 측정 결과가 있으면 체지방률과 골격근량도 넣어 주세요. 체중만 넣어도 됩니다.</p>
+      <div id="bodyStatus"></div>
       <div id="bodyTiles" class="stats"></div>
+      <div id="bodyAnalysis"></div>
       <div class="seg segm" id="bodyMetric" role="radiogroup" aria-label="그래프 항목">
         <label><input type="radio" name="bodyMetric" value="kg" checked><span>체중</span></label>
         <label><input type="radio" name="bodyMetric" value="smm"><span>골격근량</span></label>
@@ -270,6 +273,16 @@
     <details class="card fold"><summary>이번 주 볼륨 <small>최근 7일</small></summary><div id="weeklyBox"></div></details>
     <details class="card fold"><summary>운동별 추정 1RM</summary><label>운동<select id="e1Select"></select></label><div id="e1Chart" class="chart"></div></details>
     <details class="card fold"><summary>최근 운동 기록</summary><div id="historyBox"></div></details>
+    <details class="card fold">
+      <summary>계정 · 보안 <small>비밀번호 변경 · 계정 삭제</small></summary>
+      <p class="note">기록은 비밀번호로 암호화되어 이 기기의 이 브라우저에만 저장됩니다. 비밀번호를 잊으면 복구할 수 없어요.</p>
+      <form id="pwForm" class="pwform" novalidate>
+        <label>현재 비밀번호<input type="password" id="pwOld" autocomplete="current-password"></label>
+        <label>새 비밀번호 <small>(4자 이상)</small><input type="password" id="pwNew" autocomplete="new-password"></label>
+        <button type="submit" class="ghost">비밀번호 바꾸기</button>
+      </form>
+      <button type="button" id="delAccount" class="ghost danger wide">이 기기에서 내 계정과 기록 삭제</button>
+    </details>
     <details class="card fold">
       <summary>백업 · 복원</summary>
       <p class="note">기록은 이 기기의 브라우저에만 저장됩니다. 기기를 바꾸거나 브라우저 데이터를 지우기 전에 백업하세요.</p>
@@ -294,5 +307,7 @@
 <script src="js/foods.js"></script>
 <script src="js/diet.js"></script>
 <script src="js/activity.js"></script>
+<script src="js/bodycomp.js"></script>
+<script src="js/vault.js"></script>
 </body>
 </html>
