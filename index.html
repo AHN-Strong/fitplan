@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="핏플랜">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>핏플랜 - 기초대사량 계산과 맞춤 운동 프로그램</title>
+<meta name="description" content="키·몸무게로 기초대사량과 적정 체중을 계산하고, 나에게 맞는 주간 운동 프로그램을 만들어 드립니다.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top"><div class="wrap"><strong>🏋️ 핏플랜</strong><span class="sub">기초대사량 · 적정체중 · 맞춤 운동</span></div></header>
+
+<nav class="tabs" id="tabs" aria-label="메뉴">
+  <button type="button" data-tab="plan" class="on">📋 계획</button>
+  <button type="button" data-tab="today">🏋️ 운동</button>
+  <button type="button" data-tab="diet">🍽️ 식단</button>
+  <button type="button" data-tab="energy">🔥 활동</button>
+  <button type="button" data-tab="log">📈 기록</button>
+</nav>
+
+<div class="resttimer" id="restTimer" hidden>
+  <span id="restLabel">휴식</span><b id="restClock">0:00</b>
+  <button type="button" id="restAdd" class="ghost">+15초</button>
+  <button type="button" id="restSkip" class="ghost">건너뛰기</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<main class="wrap">
+  <div class="tabpanel" id="tab-plan">
+  <section class="card" id="formCard">
+    <h1 id="formTitle">내 정보 입력</h1>
+    <div class="formsum" id="formSum" hidden><span id="formSumText"></span><button type="button" class="ghost small" id="editForm">수정</button></div>
+    <form id="form" novalidate>
+      <div class="seg" role="radiogroup" aria-label="성별">
+        <label><input type="radio" name="sex" value="male" checked><span>남성</span></label>
+        <label><input type="radio" name="sex" value="female"><span>여성</span></label>
+      </div>
+      <div class="grid3">
+        <label>키 (cm)<input type="number" name="height" inputmode="decimal" placeholder="170" step="0.1"><em class="err" data-for="height"></em></label>
+        <label>몸무게 (kg)<input type="number" name="weight" inputmode="decimal" placeholder="65" step="0.1"><em class="err" data-for="weight"></em></label>
+        <label>나이 (세)<input type="number" name="age" inputmode="numeric" placeholder="30"><em class="err" data-for="age"></em></label>
+      </div>
+      <div class="pickrow">
+        <span class="pl">목표</span>
+        <div class="seg seg3" role="radiogroup" aria-label="목표">
+          <label><input type="radio" name="goalPick" value="muscle" checked><span>근육 키우기</span></label>
+          <label><input type="radio" name="goalPick" value="lose"><span>다이어트</span></label>
+          <label><input type="radio" name="goalPick" value="strength"><span>힘 기르기</span></label>
+        </div>
+      </div>
+      <div class="pickrow">
+        <span class="pl">운동 경력</span>
+        <div class="seg seg3" role="radiogroup" aria-label="운동 경력">
+          <label><input type="radio" name="levelPick" value="1" checked><span>초보</span></label>
+          <label><input type="radio" name="levelPick" value="2"><span>6개월~2년</span></label>
+          <label><input type="radio" name="levelPick" value="3"><span>2년 이상</span></label>
+        </div>
+      </div>
+      <div class="pickrow">
+        <span class="pl">일주일에 운동할 날</span>
+        <div class="seg seg6" role="radiogroup" aria-label="주당 운동 일수">
+          <label><input type="radio" name="daysPick" value="2"><span>2일</span></label>
+          <label><input type="radio" name="daysPick" value="3" checked><span>3일</span></label>
+          <label><input type="radio" name="daysPick" value="4"><span>4일</span></label>
+          <label><input type="radio" name="daysPick" value="5"><span>5일</span></label>
+          <label><input type="radio" name="daysPick" value="6"><span>6일</span></label>
+          <label><input type="radio" name="daysPick" value="7"><span>7일</span></label>
+        </div>
+      </div>
+
+      <label>직업·평소 활동 <small>(소모 칼로리 계산에 쓰여요)</small>
+        <select name="job">
+          <option value="1" selected>앉아서 일함 (사무직·학생)</option>
+          <option value="2">주로 서거나 걸어 다니며 일함 (교사·판매·서비스)</option>
+          <option value="3">활동량 많음 (간호·배달·조리·돌봄)</option>
+          <option value="4">육체노동 (건설·농업·물류)</option>
+        </select>
+      </label>
+      <div class="goalbox">
+        <span class="pl">목표 체중 (선택) <small>정하면 기한 안에 도달할 하루 식단 칼로리를 계산해요</small></span>
+        <div class="grid2">
+          <label>목표 체중 (kg)<input type="number" name="targetWeight" inputmode="decimal" placeholder="예: 70" step="0.1"><em class="err" data-for="targetWeight"></em></label>
+          <label>달성 기한<input type="date" name="targetDate"><em class="err" data-for="targetDate"></em></label>
+        </div>
+        <p class="note" id="goalHint"></p>
+        <input type="hidden" name="weeks" value="12">
+      </div>
+      <details class="adv" id="advBox">
+        <summary>고급 설정 <small>(선택 · 비워 두면 자동으로 정해요)</small></summary>
+        <!-- 위 버튼과 연결된 실제 값 (기존 로직 호환용) -->
+        <select name="goal" hidden aria-hidden="true"><option value="muscle" selected>근비대</option><option value="lose">다이어트</option><option value="strength">스트렝스</option></select>
+        <select name="level" hidden aria-hidden="true"><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select>
+        <select name="days" hidden aria-hidden="true"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+        <div class="grid2">
+          <label>1회 운동 시간
+            <select name="minutes"><option value="30">30분</option><option value="45">45분</option><option value="60" selected>60분</option><option value="75">75분 이상</option></select>
+          </label>
+          <label>운동 장소
+            <select name="location">
+              <option value="gym" selected>헬스장</option>
+              <option value="home">집 (덤벨·밴드)</option>
+              <option value="body">맨몸 운동</option>
+            </select>
+          </label>
+          <label>체지방률 % <small>(알면 더 정확해요)</small><input type="number" name="bodyFat" inputmode="decimal" placeholder="예: 20" step="0.1"><em class="err" data-for="bodyFat"></em></label>
+        </div>
+        <div id="strengthGoal" hidden>
+          <label>스트렝스 세부 목표
+            <select name="goalType">
+              <option value="strength">목표 스트렝스 (3대 운동 합계)</option>
+              <option value="fat">목표 체지방량</option>
+              <option value="smm">목표 골격근량</option>
+            </select>
+          </label>
+          <div class="grid2 gt" data-gt="strength">
+            <label>현재 3대 합계 (kg)<input type="number" name="strengthNow" inputmode="decimal" placeholder="스쿼트+벤치+데드 1RM 합"><em class="err" data-for="strengthNow"></em></label>
+            <label>목표 3대 합계 (kg)<input type="number" name="strengthTarget" inputmode="decimal" placeholder="예: 400"><em class="err" data-for="strengthTarget"></em></label>
+          </div>
+          <div class="gt" data-gt="fat" hidden>
+            <label>목표 체지방량 (kg) <small>(체지방률을 입력해야 계산돼요)</small><input type="number" name="fatTarget" inputmode="decimal" placeholder="예: 10" step="0.1"><em class="err" data-for="fatTarget"></em></label>
+          </div>
+          <div class="grid2 gt" data-gt="smm" hidden>
+            <label>현재 골격근량 (kg)<input type="number" name="smmNow" inputmode="decimal" step="0.1" placeholder="예: 30"><em class="err" data-for="smmNow"></em></label>
+            <label>목표 골격근량 (kg)<input type="number" name="smmTarget" inputmode="decimal" step="0.1" placeholder="예: 33"><em class="err" data-for="smmTarget"></em></label>
+          </div>
+        </div>
+        <div class="injuries">
+          <span>통증·부상 부위 (해당 시 선택)</span>
+          <label><input type="checkbox" name="inj" value="knee"> 무릎</label>
+          <label><input type="checkbox" name="inj" value="back"> 허리</label>
+          <label><input type="checkbox" name="inj" value="shoulder"> 어깨</label>
+          <label><input type="checkbox" name="inj" value="elbow"> 팔꿈치</label>
+          <label><input type="checkbox" name="inj" value="wrist"> 손목</label>
+        </div>
+        <details class="equip" id="equipBox">
+          <summary>보유 기구 직접 선택 <small id="equipSummary"></small></summary>
+          <p class="note">장소를 고르면 기본값이 채워집니다. 없는 기구를 빼면 그 기구가 필요한 운동이 제외됩니다. 맨몸 운동은 항상 포함됩니다.</p>
+          <div class="equiplist">
+            <label><input type="checkbox" name="eq" value="barbell"> 바벨·랙</label>
+            <label><input type="checkbox" name="eq" value="machine"> 머신·케이블</label>
+            <label><input type="checkbox" name="eq" value="dumbbell"> 덤벨</label>
+            <label><input type="checkbox" name="eq" value="bar"> 철봉(풀업바)</label>
+            <label><input type="checkbox" name="eq" value="band"> 밴드</label>
+          </div>
+        </details>
+        <details class="equip" id="splitBox">
+          <summary>분할 방식 직접 정하기 <small id="splitSummary"></small></summary>
+          <label>분할 수 <small>(요일에 반복 배정)</small>
+            <select name="splitCount">
+              <option value="1">1분할 (무분할·전신)</option><option value="2">2분할</option><option value="3">3분할</option>
+              <option value="4">4분할</option><option value="5">5분할</option><option value="6">6분할</option>
+            </select>
+          </label>
+          <div class="splits">
+            <div class="splits-head"><span>분할별 운동 부위</span><button type="button" id="resetSplits" class="ghost">기본값으로</button></div>
+            <p class="note" id="splitHint"></p>
+            <div id="splitEditor"></div>
+            <em class="err" data-for="splits"></em>
+          </div>
+        </details>
+      </details>
+      <button type="submit" class="primary">계산하고 프로그램 만들기</button>
+    </form>
+  </section>
+
+  <div id="results" hidden>
+    <section class="card">
+      <h2>내 몸 요약</h2>
+      <div class="stats" id="stats"></div>
+      <p class="note" id="macroLine"></p>
+      <p id="warn" class="warn" hidden></p>
+      <details class="more" id="bodyMore">
+        <summary>자세히 보기 <small>BMI · 적정 체중 · 목표 분석</small></summary>
+        <div class="bmi">
+          <div class="bar"><i id="bmiMarker"></i></div>
+          <div class="ticks"><span>저체중</span><span>정상</span><span>과체중</span><span>비만</span></div>
+        </div>
+        <p id="bmiText" class="note"></p>
+        <div id="goalCard" hidden>
+          <h3>목표 분석</h3>
+          <ul id="goalNotes" class="gnotes"></ul>
+          <div id="milestones" class="miles"></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="card">
+      <div class="row"><h2>운동 프로그램</h2><button type="button" id="regen" class="ghost small">다른 구성</button></div>
+      <p id="programSummary" class="note"></p>
+      <button type="button" class="primary" id="startToday">오늘 운동 시작하기</button>
+      <p class="note legend">운동을 누르면 동작 사진과 타겟 근육을 볼 수 있어요.</p>
+      <div id="v3d" class="v3d" hidden>
+        <button type="button" class="vclose" id="vClose" aria-label="닫기">✕</button>
+        <div class="vfig" id="vFig"></div>
+        <div class="vmotion">
+          <div class="vcap"><b id="v3dName"></b><span id="v3dMuscle"></span></div>
+          <div class="vphotos" id="vPhotos"></div>
+          <small class="vcredit" id="vCredit"></small>
+        </div>
+      </div>
+      <div id="days"></div>
+      <details class="more">
+        <summary>주간 볼륨 · 운동 팁</summary>
+        <div id="volume"></div>
+        <p class="note">연구에 따르면 근육군당 주 10세트 이상일 때 근비대 효과가 가장 컸고(5세트 미만 &lt; 5~9세트 &lt; 10세트 이상), 볼륨이 같다면 빈도 자체의 차이는 작았습니다. 그래서 모든 근육을 주 2회 이상으로 나눠 배분합니다.</p>
+        <div class="tips"><h3>운동 팁</h3><ul id="tips"></ul></div>
+      </details>
+    </section>
+    <button type="button" id="print" class="ghost wide">프로그램 인쇄 / PDF 저장</button>
+  </div>
+
+  <details class="card refs">
+    <summary>프로그램 설계 근거</summary>
+    <ul>
+      <li>Schoenfeld BJ (2010). The Mechanisms of Muscle Hypertrophy and Their Application to Resistance Training. <i>J Strength Cond Res</i>. — 기계적 장력·대사 스트레스·근손상 3요인, 6~12회 반복 중심, 세트 간 휴식 60~90초, 실패 지점 근처까지 수행.</li>
+      <li>Schoenfeld BJ, Ogborn D, Krieger JW (2017). Dose-response relationship between weekly resistance training volume and increases in muscle mass. <i>J Sports Sci</i>. — 주간 세트 수와 근비대의 용량-반응 관계.</li>
+      <li>Schoenfeld BJ, Grgic J, Krieger J (2019). How many times per week should a muscle be trained to maximize muscle hypertrophy? <i>J Sports Sci</i>. — 볼륨이 같을 때 빈도 효과는 작음.</li>
+    </ul>
+    <p class="note">다이어트·스트렝스 목표의 처방(반복 수·휴식·볼륨)은 위 근비대 연구를 바탕으로 일반적인 근력 운동 가이드라인을 적용해 조정한 것입니다.</p>
+    <p class="note">근육 해부도와 운동 동작 사진은 <a href="https://wger.de" target="_blank" rel="noopener">wger.de</a>의 오픈 데이터(CC-BY-SA 3.0/4.0)를 사용했습니다. 각 사진 아래에 작성자를 표기했고, 사진이 없는 운동은 해부도만 표시됩니다. 해부도는 성별과 관계없이 같은 그림입니다.</p>
+  </details>
+
+  <p class="disclaimer">※ 본 결과는 참고용이며 의학적 진단이 아닙니다. 질환·통증이 있거나 임신 중이라면 운동 전 전문가와 상담하세요. 입력한 정보는 이 기기의 브라우저에만 저장되며 서버로 전송되지 않습니다.</p>
+  </div>
+
+  <div class="tabpanel" id="tab-today" hidden>
+    <section class="card" id="todayCard"></section>
+  </div>
+
+  <div class="tabpanel" id="tab-diet" hidden>
+    <section class="card" id="dietCard"></section>
+  </div>
+
+  <div class="tabpanel" id="tab-energy" hidden>
+    <section class="card" id="energyCard"></section>
+  </div>
+
+  <div class="tabpanel" id="tab-log" hidden>
+    <section class="card" id="logSummary"></section>
+    <section class="card">
+      <h2>체성분 변화</h2>
+      <form id="weightForm" class="bodyform" novalidate>
+        <label>날짜<input type="date" id="wDate"></label>
+        <label>체중 (kg)<input type="number" id="wKg" inputmode="decimal" step="0.1" placeholder="78.5"></label>
+        <label>체지방률 (%)<input type="number" id="wBf" inputmode="decimal" step="0.1" placeholder="선택"></label>
+        <label>골격근량 (kg)<input type="number" id="wSmm" inputmode="decimal" step="0.1" placeholder="선택"></label>
+        <button type="submit" class="primary small">기록</button>
+      </form>
+      <p class="note">인바디 같은 체성분 측정 결과가 있으면 체지방률과 골격근량도 넣어 주세요. 체중만 넣어도 됩니다.</p>
+      <div id="bodyTiles" class="stats"></div>
+      <div class="seg segm" id="bodyMetric" role="radiogroup" aria-label="그래프 항목">
+        <label><input type="radio" name="bodyMetric" value="kg" checked><span>체중</span></label>
+        <label><input type="radio" name="bodyMetric" value="smm"><span>골격근량</span></label>
+        <label><input type="radio" name="bodyMetric" value="fat"><span>체지방량</span></label>
+        <label><input type="radio" name="bodyMetric" value="bf"><span>체지방률</span></label>
+      </div>
+      <div id="weightChart" class="chart"></div>
+      <div id="bodyChips"></div>
+    </section>
+    <details class="card fold"><summary>근육 회복 상태</summary><div id="recoveryBox"></div></details>
+    <details class="card fold"><summary>이번 주 볼륨 <small>최근 7일</small></summary><div id="weeklyBox"></div></details>
+    <details class="card fold"><summary>운동별 추정 1RM</summary><label>운동<select id="e1Select"></select></label><div id="e1Chart" class="chart"></div></details>
+    <details class="card fold"><summary>최근 운동 기록</summary><div id="historyBox"></div></details>
+    <details class="card fold">
+      <summary>백업 · 복원</summary>
+      <p class="note">기록은 이 기기의 브라우저에만 저장됩니다. 기기를 바꾸거나 브라우저 데이터를 지우기 전에 백업하세요.</p>
+      <div class="row2"><button type="button" id="exportBtn" class="ghost">백업 내보내기</button><button type="button" id="importBtn" class="ghost">복원하기</button></div>
+      <textarea id="backupText" rows="5" placeholder="백업 내용이 여기에 표시됩니다. 복원하려면 백업 내용을 붙여 넣고 '복원하기'를 누르세요." spellcheck="false"></textarea>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </details>
+  </div>
+</main>
+
+<script src="js/calc.js"></script>
+<script src="js/exercises.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/store.js"></script>
+<script src="js/bodymap.js"></script>
+<script src="js/eximages.js"></script>
+<script src="js/app.js"></script>
+<script src="js/workout.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/energy.js"></script>
+<script src="js/foods.js"></script>
+<script src="js/diet.js"></script>
+<script src="js/activity.js"></script>
+</body>
+</html>

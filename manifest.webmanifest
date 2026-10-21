@@ -1,0 +1,16 @@
+﻿{
+  "name": "핏플랜",
+  "short_name": "핏플랜",
+  "description": "기초대사량 계산과 맞춤 운동 프로그램",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "ko",
+  "theme_color": "#4f46e5",
+  "background_color": "#f4f6fb",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
